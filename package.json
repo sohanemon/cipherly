@@ -1,6 +1,6 @@
 {
   "name": "cipherly",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "A lightweight, developer-friendly AES-GCM encryption library",
   "type": "module",
   "license": "MIT",
