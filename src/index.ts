@@ -1,2 +1,2 @@
-export * from './encryption'
-export { default } from './encryption'
+export * from './cipherly';
+export { default } from './cipherly';

@@ -30,10 +30,16 @@
     "build": "tsdown",
     "dev": "tsdown --watch",
     "test": "vitest",
+    "check": "biome check .",
+    "fix": "biome check --write .",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write --unsafe .",
+    "format": "biome format .",
     "typecheck": "tsc --noEmit",
     "release": "bumpp && npm publish"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.2.4",
     "@types/node": "^22.15.17",
     "bumpp": "^10.1.0",
     "tsdown": "^0.11.9",
