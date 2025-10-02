@@ -4,8 +4,8 @@
  */
 
 type Opts = {
-  ivLength: number
-}
+  ivLength: number;
+};
 
 export class Cipherly {
   private key: string;
@@ -17,7 +17,7 @@ export class Cipherly {
    */
   constructor(key: string, opts?: Opts) {
     this.key = key;
-    this.opts = { ivLength: 12, ...(opts ?? {}) }
+    this.opts = { ivLength: 12, ...(opts ?? {}) };
   }
 
   /**
@@ -72,7 +72,6 @@ export class Cipherly {
 
     return this.fromArrayBuffer(decryptedBuffer);
   }
-
 
   private async getCryptoKey(secret: string) {
     const hashed = await crypto.subtle.digest(
