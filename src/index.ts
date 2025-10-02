@@ -1,3 +1,1 @@
-export const myFunction = () => {
-  return 'Hello, world!'
-}
+export * from './encryption'
