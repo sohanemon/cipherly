@@ -1,0 +1,43 @@
+{
+  "name": "encrypt.js",
+  "version": "0.0.1",
+  "description": "",
+  "type": "module",
+  "license": "MIT",
+  "homepage": "https://github.com/sohanemon/encrypt.js#readme",
+  "bugs": {
+    "url": "https://github.com/sohanemon/encrypt.js/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sohanemon/encrypt.js.git"
+  },
+  "author": "Sohan Emon <sohanemon@outlook.com>",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit",
+    "release": "bumpp && npm publish"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.17",
+    "bumpp": "^10.1.0",
+    "tsdown": "^0.11.9",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.3"
+  }
+}
