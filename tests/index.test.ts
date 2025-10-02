@@ -60,4 +60,22 @@ describe('Cipherly', () => {
     const decrypted = await cipher.decrypt<typeof data>(encrypted);
     expect(decrypted).toEqual(data);
   });
+
+  it('should fail to decrypt invalid Base64 string', async () => {
+    await expect(cipher.decrypt('not-a-base64')).rejects.toThrow();
+  });
+
+  it('should handle nested objects and arrays correctly', async () => {
+    const data = {
+      user: { name: 'Alice', roles: ['admin', 'user'] },
+      meta: { loggedIn: true, score: 99.5 },
+    };
+    const encrypted = await cipher.encrypt(data);
+    const decrypted = await cipher.decrypt<typeof data>(encrypted);
+    expect(decrypted).toEqual(data);
+  });
+
+  it('should throw error for null input', async () => {
+    await expect(cipher.encrypt(null)).rejects.toThrow('Unsupported data type');
+  });
 });
