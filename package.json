@@ -1,6 +1,6 @@
 {
-  "name": "encrypt.js",
-  "version": "0.0.3",
+  "name": "crypto-lite",
+  "version": "0.0.4",
   "description": "",
   "type": "module",
   "license": "MIT",
