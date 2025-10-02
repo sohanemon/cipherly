@@ -2,16 +2,22 @@
  * A utility class for encrypting and decrypting data using AES-GCM.
  * Handles all binary encoding internally and exposes string-based methods.
  */
-export class Encryption {
+
+type Opts = {
+  ivLength: number
+}
+
+export class Cipherly {
   private key: string;
-  private ivLength = 12;
+  private opts: Opts;
 
   /**
    * Creates a new Encryption instance with a secret key.
    * @param key - The secret key used for encryption and decryption.
    */
-  constructor(key: string) {
+  constructor(key: string, opts?: Opts) {
     this.key = key;
+    this.opts = { ivLength: 12, ...(opts ?? {}) }
   }
 
   /**
@@ -27,7 +33,7 @@ export class Encryption {
    * ```
    */
   async encrypt<T>(data: T): Promise<string> {
-    const iv = crypto.getRandomValues(new Uint8Array(this.ivLength));
+    const iv = crypto.getRandomValues(new Uint8Array(this.opts?.ivLength));
     const ciphertext = await crypto.subtle.encrypt(
       { name: 'AES-GCM', iv, tagLength: 128 },
       await this.getCryptoKey(this.key),
@@ -55,8 +61,8 @@ export class Encryption {
    */
   async decrypt<T>(encryptedData: string): Promise<T> {
     const combined = this.fromBase64(encryptedData);
-    const iv = combined.slice(0, this.ivLength);
-    const ciphertext = combined.slice(this.ivLength);
+    const iv = combined.slice(0, this.opts.ivLength);
+    const ciphertext = combined.slice(this.opts.ivLength);
 
     const decryptedBuffer = await crypto.subtle.decrypt(
       { name: 'AES-GCM', iv, tagLength: 128 },
@@ -67,7 +73,6 @@ export class Encryption {
     return this.fromArrayBuffer(decryptedBuffer);
   }
 
-  /** ================= Private Helpers ================= */
 
   private async getCryptoKey(secret: string) {
     const hashed = await crypto.subtle.digest(
@@ -84,10 +89,13 @@ export class Encryption {
   }
 
   private toArrayBuffer<T>(data: T): ArrayBuffer {
+    // @ts-expect-error ;
     if (typeof data === 'string') return new TextEncoder().encode(data);
     if (data instanceof ArrayBuffer) return data;
+    // @ts-expect-error ;
     if (data instanceof Uint8Array) return data;
     if (typeof data === 'object' && data !== null)
+      // @ts-expect-error ;
       return new TextEncoder().encode(JSON.stringify(data));
     throw new Error('Unsupported data type');
   }
@@ -116,3 +124,5 @@ export class Encryption {
     return array;
   }
 }
+
+export default Cipherly;
