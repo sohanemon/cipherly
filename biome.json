@@ -1,13 +1,7 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.2.4/schema.json",
   "files": {
-    "includes": [
-      "**",
-      "!**/node_modules/**",
-      "!**/.next/**",
-      "!**/build/**",
-      "!**/styles/utilities.css"
-    ]
+    "includes": ["**", "!**/node_modules", "!**/dist"]
   },
   "assist": {
     "actions": {
@@ -19,11 +13,10 @@
   "formatter": {
     "enabled": true,
     "indentWidth": 2,
-    "indentStyle": "space",
-    "includes": ["**", "!**/styles/utilities.css"]
+    "indentStyle": "space"
   },
   "linter": {
-    "enabled": false,
+    "enabled": true,
     "rules": {
       "recommended": true,
       "style": {

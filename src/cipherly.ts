@@ -110,7 +110,9 @@ export class Cipherly {
 
   private toBase64(array: Uint8Array): string {
     let binary = '';
-    array.forEach((b) => (binary += String.fromCharCode(b)));
+    array.forEach((b) => {
+      binary += String.fromCharCode(b);
+    });
     return btoa(binary);
   }
 
