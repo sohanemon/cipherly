@@ -1,10 +1,10 @@
 {
   "name": "cipherly",
-  "version": "0.0.15",
+  "version": "0.0.16-beta.1",
   "description": "A lightweight, developer-friendly AES-GCM encryption library",
   "type": "module",
   "license": "MIT",
-  "homepage": "https://chipherly-demo.vercel.app",
+  "homepage": "https://cipherly-demo.vercel.app",
   "bugs": {
     "url": "https://github.com/sohanemon/cipherly/issues"
   },
