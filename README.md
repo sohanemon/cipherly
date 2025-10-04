@@ -116,7 +116,7 @@ try {
 #### **Constructor**
 
 ```typescript
-new Cipherly(secretKey: string, options?: { ?: number})
+new Cipherly(secretKey: string, options?: { ivLength?: number})
 ```
 
 * `secretKey` — Your secret passphrase (used to derive AES-GCM key)
