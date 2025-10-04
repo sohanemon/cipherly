@@ -1,76 +1,162 @@
-# cipherly
+# 🧩 Cipherly
 
 ![npm version](https://img.shields.io/npm/v/cipherly)
 ![npm downloads](https://img.shields.io/npm/dm/cipherly)
 ![License](https://img.shields.io/npm/l/cipherly)
 
-## Description
+> A lightweight, developer-friendly AES-GCM encryption library built with TypeScript and Web Crypto API — **simple**, **secure**, and **typed**.
 
-`cipherly` is a lightweight, developer-friendly AES-GCM encryption library for securely encrypting and decrypting strings. Built with TypeScript and Web Crypto API, it ensures high performance and security.
+---
 
-## Features
+## ✨ Features
 
-- **AES-GCM Encryption**: Uses AES-GCM for authenticated encryption.
-- **String-Based Input and Output**: Accepts and returns strings, making it easy to use with JSON and text data.
-- **Automatic IV Generation**: Generates a unique initialization vector (IV) for each encryption operation.
-- **Secure Key Management**: Derives cryptographic keys using SHA-256 hashing.
-- **Fully Typed**: Written in TypeScript for enhanced developer experience.
+* 🔒 **AES-GCM Encryption** — Uses AES-GCM for authenticated encryption with integrity checks.
+* 🧠 **String-Based API** — Encrypts and decrypts strings seamlessly (perfect for JSON, tokens, or secrets).
+* 🔁 **Automatic IV Generation** — Secure random IV created for every encryption operation.
+* 🪪 **Secure Key Derivation** — Derives 256-bit keys from passphrases using SHA-256.
+* 🧩 **Fully Typed** — 100% TypeScript for better DX and autocompletion.
+* ⚡ **Zero Dependencies** — Built directly on the Web Crypto API.
 
-## Installation
+---
 
-You can install `cipherly` using npm:
+## 📦 Installation
 
 ```bash
 npm install cipherly
-````
+# or
+yarn add cipherly
+# or
+pnpm add cipherly
+```
 
-## Usage
+---
+
+## 🚀 Quick Start
 
 ### Encrypting a String
 
-```javascript
+```typescript
 import { Cipherly } from 'cipherly';
 
-const cipher = new Cipherly('your-secret-key');
+const cipher = new Cipherly('my-super-secret-key');
+
 const encrypted = await cipher.encrypt('Hello, World!');
-console.log(encrypted); // Encrypted string
+console.log(encrypted);
+// 👉 eyJpdiI6IjQ1c2xZV2pRbEciLCJkYXRhIjoiU2Y3b3A5... 
 ```
 
 ### Decrypting a String
 
-```javascript
+```typescript
 import { Cipherly } from 'cipherly';
 
-const cipher = new Cipherly('your-secret-key');
+const cipher = new Cipherly('my-super-secret-key');
+
 const decrypted = await cipher.decrypt(encrypted);
-console.log(decrypted); // 'Hello, World!'
+console.log(decrypted);
+// 👉 'Hello, World!'
 ```
 
-## API Documentation
+---
 
-### `Cipherly`
+## 🧪 Advanced Examples
 
-#### `new Cipherly(key: string)`
+### 1. Encrypting and Decrypting Object
 
-Creates a new instance of the `Cipherly` class.
+```typescript
+import { Cipherly } from 'cipherly';
 
-* `key`: The secret key used for encryption and decryption.
+const cipher = new Cipherly('api-key-123');
 
-#### `encrypt(data: string): Promise<string>`
+const userData = {
+  id: 42,
+  name: 'Alice',
+  email: 'alice@example.com',
+};
 
-Encrypts the provided string.
+const encrypted = await cipher.encrypt(userData);
+console.log('Encrypted JSON:', encrypted);
 
-* `data`: The string to encrypt.
-* Returns: A promise that resolves to the encrypted string.
+// const decrypted = await cipher.decrypt(encrypted); // if not using typescript
 
-#### `decrypt(encryptedData: string): Promise<string>`
+const decrypted = await cipher.decrypt<typeof userData>(encrypted);
+console.log('Decrypted object:', decrypted);
+```
 
-Decrypts the provided encrypted string.
 
-* `encryptedData`: The encrypted string to decrypt.
-* Returns: A promise that resolves to the decrypted string.
+---
 
-## License
+### 2. Handling Errors Gracefully
 
-This project is licensed under the ISC License - see the [LICENSE](LICENSE) file for details.
+```typescript
+import { Cipherly } from 'cipherly';
+
+const cipher = new Cipherly('secure-key');
+
+try {
+  const decrypted = await cipher.decrypt('invalid-data');
+  console.log(decrypted);
+} catch (error) {
+  console.error('Decryption failed:', error);
+}
+```
+
+> 🔥 Common causes of errors:
+>
+> * Wrong decryption key
+> * Corrupted ciphertext
+> * Truncated or tampered encrypted string
+
+---
+
+## 🧰 API Reference
+
+### `class Cipherly`
+
+#### **Constructor**
+
+```typescript
+new Cipherly(secretKey: string, options?: { ?: number})
+```
+
+* `secretKey` — Your secret passphrase (used to derive AES-GCM key)
+* `options.iv` — Optional custom 12-byte IV
+
+#### **Methods**
+
+##### `encrypt(data: string): Promise<string>`
+
+Encrypts a string.
+
+```typescript
+const encrypted = await cipher.encrypt('hello');
+```
+
+##### `decrypt(encryptedData: string): Promise<string>`
+
+Decrypts an encrypted string.
+
+```typescript
+const decrypted = await cipher.decrypt(encrypted);
+```
+
+---
+
+## 🔐 Security Notes
+
+* Always use a **strong, random key** — at least 16 characters.
+* Keep your secret key **out of client-side code** if encrypting sensitive data.
+
+---
+
+## 🧾 License
+
+Licensed under the **ISC License** — see the [LICENSE](LICENSE) file for details.
+
+---
+
+## ❤️ Contributing
+
+Pull requests, issues, and discussions are welcome!
+If you encounter a bug or want to suggest an enhancement, feel free to open an issue.
 
