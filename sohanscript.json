@@ -1,9 +1,9 @@
 {
   "$schema": "https://sohanjs.web.app/draft/next/schema.json",
-  "packageManager": "pnpm",
+  "packageManager": "bun",
   "cwd": "$NVIM_CWD",
   "commands": {
     "dev": "",
-    "build": "pnpm run build"
+    "build": "bun run build"
   }
 }

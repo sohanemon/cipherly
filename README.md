@@ -3,6 +3,7 @@
 ![npm version](https://img.shields.io/npm/v/cipherly)
 ![npm downloads](https://img.shields.io/npm/dm/cipherly)
 ![License](https://img.shields.io/npm/l/cipherly)
+![Tests](https://github.com/sohanemon/sohanemon-utils/actions/workflows/test.yml/badge.svg)
 
 > A lightweight, developer-friendly AES-GCM encryption library built with TypeScript and Web Crypto API — **simple**, **secure**, and **typed**.
 
@@ -86,7 +87,26 @@ console.log('Decrypted object:', decrypted);
 
 ---
 
-### 2. Handling Errors Gracefully
+### 2. URL-Safe Encryption
+
+```typescript
+import { Cipherly } from 'cipherly';
+
+const cipher = new Cipherly('secure-key');
+
+const data = { token: 'abc123', expires: Date.now() };
+
+const encrypted = await cipher.encryptUrlSafe(data);
+console.log('URL-safe encrypted:', encrypted);
+// 👉 eyJpdiI6IjQ1c2xZV2pRbEciLCJkYXRhIjoiU2Y3b3A5... (URL-safe)
+
+const decrypted = await cipher.decryptUrlSafe<typeof data>(encrypted);
+console.log('Decrypted:', decrypted);
+```
+
+---
+
+### 3. Handling Errors Gracefully
 
 ```typescript
 import { Cipherly } from 'cipherly';
@@ -138,6 +158,22 @@ Decrypts an encrypted string.
 
 ```typescript
 const decrypted = await cipher.decrypt(encrypted);
+```
+
+##### `encryptUrlSafe(data: any): Promise<string>`
+
+Encrypts data and returns a URL-safe Base64 string.
+
+```typescript
+const encrypted = await cipher.encryptUrlSafe('hello');
+```
+
+##### `decryptUrlSafe(encryptedData: string): Promise<any>`
+
+Decrypts a URL-safe Base64 string.
+
+```typescript
+const decrypted = await cipher.decryptUrlSafe(encrypted);
 ```
 
 ---

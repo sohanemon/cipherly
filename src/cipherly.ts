@@ -124,6 +124,38 @@ export class Cipherly {
     }
     return array;
   }
+
+  private toBase64Url(base64: string): string {
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  private fromBase64Url(base64Url: string): string {
+    let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    while (base64.length % 4 !== 0) {
+      base64 += '=';
+    }
+    return base64;
+  }
+
+  /**
+   * Encrypts data and returns a URL-safe Base64 string.
+   * @param data - The data to encrypt.
+   * @returns A Promise that resolves to a URL-safe Base64-encoded string.
+   */
+  async encryptUrlSafe<T>(data: T): Promise<string> {
+    const encrypted = await this.encrypt(data);
+    return this.toBase64Url(encrypted);
+  }
+
+  /**
+   * Decrypts a URL-safe Base64-encoded string and returns the original data.
+   * @param encryptedData - The URL-safe Base64 string containing encrypted data.
+   * @returns A Promise that resolves to the decrypted data.
+   */
+  async decryptUrlSafe<T>(encryptedData: string): Promise<T> {
+    const base64 = this.fromBase64Url(encryptedData);
+    return this.decrypt<T>(base64);
+  }
 }
 
 export default Cipherly;
