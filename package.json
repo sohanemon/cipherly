@@ -1,6 +1,6 @@
 {
   "name": "cipherly",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "A lightweight, developer-friendly AES-GCM encryption library",
   "type": "module",
   "license": "MIT",
@@ -41,12 +41,11 @@
     "lint:fix": "biome lint --write --unsafe .",
     "format": "biome format --write .",
     "typecheck": "tsc --noEmit",
-    "release": "npm run typecheck && npm run format && npm run fix && npm run build && bumpp && npm publish"
+    "release": "npm run typecheck && npm run format && npm run fix && npm run build && npm publish"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
     "@types/node": "^22.15.17",
-    "bumpp": "^10.1.0",
     "tsdown": "^0.11.9",
     "typescript": "^5.8.3",
     "vitest": "^3.1.3"
