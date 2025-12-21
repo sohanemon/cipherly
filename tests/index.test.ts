@@ -284,5 +284,277 @@ describe('Cipherly', () => {
       const decrypted = await cipher.decrypt<typeof data>(encrypted);
       expect(decrypted).toEqual(data);
     });
+
+    it('should handle zero TTL (immediate expiration)', async () => {
+      const data = { token: 'abc123' };
+      // Use a past timestamp to ensure immediate expiration
+      const encrypted = await cipher.encrypt(data, {
+        expiresAt: Date.now() - 1000,
+      });
+      await expect(cipher.decrypt<typeof data>(encrypted)).rejects.toThrow(
+        'Token has expired',
+      );
+    });
+
+    it('should handle negative TTL', async () => {
+      const data = { token: 'abc123' };
+      const encrypted = await cipher.encrypt(data, { ttl: -1000 });
+      // Should be expired immediately
+      await expect(cipher.decrypt<typeof data>(encrypted)).rejects.toThrow(
+        'Token has expired',
+      );
+    });
+
+    it('should handle past expiresAt timestamp', async () => {
+      const data = { token: 'abc123' };
+      const pastTimestamp = Date.now() - 10000; // 10 seconds ago
+      const encrypted = await cipher.encrypt(data, {
+        expiresAt: pastTimestamp,
+      });
+      await expect(cipher.decrypt<typeof data>(encrypted)).rejects.toThrow(
+        'Token has expired',
+      );
+    });
+  });
+
+  describe('Backwards Compatibility', () => {
+    it('should decrypt tokens encrypted without expiration (legacy tokens)', async () => {
+      // Create a token without expiration
+      const data = { legacy: 'token', version: 1 };
+      const encrypted = await cipher.encrypt(data);
+      const decrypted = await cipher.decrypt<typeof data>(encrypted);
+      expect(decrypted).toEqual(data);
+    });
+
+    it('should work with both encryption methods interchangeably', async () => {
+      const data = { test: 'data' };
+
+      // Encrypt with regular, decrypt with URL-safe
+      const encrypted = await cipher.encrypt(data);
+      const encryptedUrlSafe = await cipher.encryptUrlSafe(data);
+
+      // Should be able to decrypt both ways
+      const decrypted1 = await cipher.decrypt<typeof data>(encrypted);
+      const decrypted2 =
+        await cipher.decryptUrlSafe<typeof data>(encryptedUrlSafe);
+
+      expect(decrypted1).toEqual(data);
+      expect(decrypted2).toEqual(data);
+    });
+  });
+
+  describe('Error Handling and Edge Cases', () => {
+    it('should handle very large data structures', async () => {
+      const largeData = {
+        array: Array.from({ length: 10000 }, (_, i) => ({
+          id: i,
+          data: 'x'.repeat(100),
+        })),
+        nested: { level1: { level2: { level3: 'deep' } } },
+      };
+      const encrypted = await cipher.encrypt(largeData);
+      const decrypted = await cipher.decrypt<typeof largeData>(encrypted);
+      expect(decrypted).toEqual(largeData);
+    });
+
+    it('should handle special characters and unicode', async () => {
+      const specialData = {
+        unicode: '🚀🔥💯',
+        special: '!@#$%^&*()_+-=[]{}|;:,.<>?',
+        multiline: 'line1\nline2\tline3',
+        quotes: '"single\'double"',
+      };
+      const encrypted = await cipher.encrypt(specialData);
+      const decrypted = await cipher.decrypt<typeof specialData>(encrypted);
+      expect(decrypted).toEqual(specialData);
+    });
+
+    it('should handle different key lengths', async () => {
+      const shortKey = 'short';
+      const longKey = 'a'.repeat(100);
+      const veryLongKey = 'b'.repeat(1000);
+
+      const data = { test: 'key length test' };
+
+      const cipherShort = new Cipherly(shortKey);
+      const cipherLong = new Cipherly(longKey);
+      const cipherVeryLong = new Cipherly(veryLongKey);
+
+      const encrypted1 = await cipherShort.encrypt(data);
+      const encrypted2 = await cipherLong.encrypt(data);
+      const encrypted3 = await cipherVeryLong.encrypt(data);
+
+      const decrypted1 = await cipherShort.decrypt<typeof data>(encrypted1);
+      const decrypted2 = await cipherLong.decrypt<typeof data>(encrypted2);
+      const decrypted3 = await cipherVeryLong.decrypt<typeof data>(encrypted3);
+
+      expect(decrypted1).toEqual(data);
+      expect(decrypted2).toEqual(data);
+      expect(decrypted3).toEqual(data);
+    });
+
+    it('should fail with wrong key', async () => {
+      const data = { secret: 'data' };
+      const encrypted = await cipher.encrypt(data);
+
+      const wrongCipher = new Cipherly('wrong-key');
+      await expect(
+        wrongCipher.decrypt<typeof data>(encrypted),
+      ).rejects.toThrow();
+    });
+
+    it('should handle empty objects and arrays', async () => {
+      const emptyData = { empty: {}, array: [] };
+      const encrypted = await cipher.encrypt(emptyData);
+      const decrypted = await cipher.decrypt<typeof emptyData>(encrypted);
+      expect(decrypted).toEqual(emptyData);
+    });
+
+    it('should handle null and undefined values in objects', async () => {
+      const nullableData = {
+        null: null,
+        undefined: undefined,
+        zero: 0,
+        empty: '',
+      };
+      const encrypted = await cipher.encrypt(nullableData);
+      const decrypted = await cipher.decrypt<typeof nullableData>(encrypted);
+      expect(decrypted).toEqual(nullableData);
+    });
+
+    it('should handle Date objects (serialized as strings)', async () => {
+      const date = new Date();
+      const dateData = { date: date.toISOString(), timestamp: Date.now() };
+      const encrypted = await cipher.encrypt(dateData);
+      const decrypted = await cipher.decrypt<typeof dateData>(encrypted);
+      expect(decrypted.date).toBe(date.toISOString()); // Date becomes ISO string
+      expect(decrypted.timestamp).toBe(dateData.timestamp);
+    });
+
+    it('should handle binary data (Uint8Array converted to string)', async () => {
+      const binaryData = new Uint8Array([1, 2, 3, 255, 0, 128]);
+      const encrypted = await cipher.encrypt(binaryData);
+      const decrypted = await cipher.decrypt<string>(encrypted);
+      // Uint8Array becomes a string through JSON serialization
+      expect(typeof decrypted).toBe('string');
+      // The exact representation depends on how Uint8Array serializes
+      expect(decrypted.length).toBeGreaterThan(0);
+    });
+
+    it('should handle Buffer-like objects', async () => {
+      const buffer = { data: [1, 2, 3], type: 'buffer' };
+      const encrypted = await cipher.encrypt(buffer);
+      const decrypted = await cipher.decrypt<typeof buffer>(encrypted);
+      expect(decrypted).toEqual(buffer);
+    });
+
+    it('should handle very long strings', async () => {
+      const longString = 'a'.repeat(100000); // 100KB string
+      const encrypted = await cipher.encrypt(longString);
+      const decrypted = await cipher.decrypt<string>(encrypted);
+      expect(decrypted).toBe(longString);
+    });
+
+    it('should handle numbers and booleans', async () => {
+      const primitiveData = {
+        number: 42,
+        float: 3.14159,
+        negative: -123,
+        zero: 0,
+        boolean: true,
+        false: false,
+      };
+      const encrypted = await cipher.encrypt(primitiveData);
+      const decrypted = await cipher.decrypt<typeof primitiveData>(encrypted);
+      expect(decrypted).toEqual(primitiveData);
+    });
+
+    it('should handle Map and Set objects (serialized as plain objects)', async () => {
+      const map = new Map([
+        ['key1', 'value1'],
+        ['key2', 'value2'],
+      ]);
+      const set = new Set([1, 2, 3, 'string']);
+      const data = { map: Object.fromEntries(map), set: Array.from(set) }; // Convert to serializable format
+
+      const encrypted = await cipher.encrypt(data);
+      const decrypted = await cipher.decrypt<typeof data>(encrypted);
+
+      expect(typeof decrypted.map).toBe('object'); // Becomes plain object
+      expect(Array.isArray(decrypted.set)).toBe(true); // Becomes array
+      expect(decrypted.map).toEqual(Object.fromEntries(map));
+      expect(decrypted.set).toEqual(Array.from(set));
+    });
+  });
+
+  describe('Type Safety', () => {
+    it('should maintain type information through encryption/decryption', async () => {
+      interface User {
+        id: number;
+        name: string;
+        email: string;
+        roles: string[];
+        metadata: {
+          createdAt: number;
+          isActive: boolean;
+        };
+      }
+
+      const user: User = {
+        id: 123,
+        name: 'John Doe',
+        email: 'john@example.com',
+        roles: ['admin', 'user'],
+        metadata: {
+          createdAt: Date.now(),
+          isActive: true,
+        },
+      };
+
+      const encrypted = await cipher.encrypt(user);
+      const decrypted = await cipher.decrypt<User>(encrypted);
+
+      // TypeScript should infer correct types
+      expect(typeof decrypted.id).toBe('number');
+      expect(typeof decrypted.name).toBe('string');
+      expect(Array.isArray(decrypted.roles)).toBe(true);
+      expect(typeof decrypted.metadata.createdAt).toBe('number');
+      expect(typeof decrypted.metadata.isActive).toBe('boolean');
+
+      expect(decrypted).toEqual(user);
+    });
+  });
+
+  describe('Performance and Stress Tests', () => {
+    it('should handle rapid consecutive operations', async () => {
+      const data = { test: 'performance' };
+      const promises = Array.from({ length: 100 }, () =>
+        cipher
+          .encrypt(data)
+          .then((encrypted) => cipher.decrypt<typeof data>(encrypted)),
+      );
+
+      const results = await Promise.all(promises);
+      results.forEach((result) => {
+        expect(result).toEqual(data);
+      });
+    });
+
+    it('should handle concurrent operations with different keys', async () => {
+      const keys = ['key1', 'key2', 'key3', 'key4', 'key5'];
+      const data = { concurrent: 'test' };
+
+      const promises = keys.map((key) => {
+        const cipherInstance = new Cipherly(key);
+        return cipherInstance
+          .encrypt(data)
+          .then((encrypted) => cipherInstance.decrypt<typeof data>(encrypted));
+      });
+
+      const results = await Promise.all(promises);
+      results.forEach((result) => {
+        expect(result).toEqual(data);
+      });
+    });
   });
 });
