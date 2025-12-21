@@ -7,6 +7,11 @@ type Opts = {
   ivLength: number;
 };
 
+type ExpirationOpts = {
+  ttl?: number; // Time to live in seconds from now
+  expiresAt?: number; // Absolute expiration timestamp (milliseconds since epoch)
+};
+
 export class Cipherly {
   private key: string;
   private opts: Opts;
@@ -20,9 +25,49 @@ export class Cipherly {
     this.opts = { ivLength: 12, ...(opts ?? {}) };
   }
 
+  private prepareDataForEncryption<T>(
+    data: T,
+    expirationOpts?: ExpirationOpts,
+  ): T | { data: T; __cipherly_expires: number } {
+    if (!expirationOpts) {
+      return data;
+    }
+
+    const expiresAt =
+      expirationOpts.expiresAt ??
+      (expirationOpts.ttl ? Date.now() + expirationOpts.ttl : undefined);
+
+    if (!expiresAt) {
+      return data;
+    }
+
+    return {
+      data,
+      __cipherly_expires: expiresAt,
+    };
+  }
+
+  private processDecryptedData<T>(decryptedData: unknown): T {
+    // Check if this is wrapped data with expiration
+    if (
+      typeof decryptedData === 'object' &&
+      decryptedData !== null &&
+      '__cipherly_expires' in decryptedData
+    ) {
+      const wrapped = decryptedData as { data: T; __cipherly_expires: number };
+      if (Date.now() > wrapped.__cipherly_expires) {
+        throw new Error('Token has expired');
+      }
+      return wrapped.data;
+    }
+
+    return decryptedData as T;
+  }
+
   /**
    * Encrypts any supported data (string or object) and returns a Base64 string.
    * @param data - The data to encrypt.
+   * @param expirationOpts - Optional expiration settings for the token.
    * @returns A Promise that resolves to a Base64-encoded string.
    *
    * @example
@@ -31,13 +76,24 @@ export class Cipherly {
    * const encrypted = await enc.encrypt({ message: 'Hello World' });
    * console.log(encrypted); // 'BASE64_ENCRYPTED_STRING'
    * ```
+   *
+   * @example
+   * ```ts
+   * // Encrypt with 1 hour TTL
+   * const encrypted = await enc.encrypt({ token: 'abc123' }, { ttl: 3600 });
+   *
+   * // Encrypt with absolute expiration
+   * const encrypted = await enc.encrypt({ token: 'abc123' }, { expiresAt: Date.now() + 3600000 });
+   * ```
    */
-  async encrypt<T>(data: T): Promise<string> {
+  async encrypt<T>(data: T, expirationOpts?: ExpirationOpts): Promise<string> {
+    const dataToEncrypt = this.prepareDataForEncryption(data, expirationOpts);
+
     const iv = crypto.getRandomValues(new Uint8Array(this.opts?.ivLength));
     const ciphertext = await crypto.subtle.encrypt(
       { name: 'AES-GCM', iv, tagLength: 128 },
       await this.getCryptoKey(this.key),
-      this.toArrayBuffer(data),
+      this.toArrayBuffer(dataToEncrypt),
     );
 
     const combined = new Uint8Array(iv.byteLength + ciphertext.byteLength);
@@ -70,7 +126,8 @@ export class Cipherly {
       ciphertext,
     );
 
-    return this.fromArrayBuffer(decryptedBuffer);
+    const decryptedData = this.fromArrayBuffer(decryptedBuffer);
+    return this.processDecryptedData<T>(decryptedData);
   }
 
   private async getCryptoKey(secret: string) {
@@ -140,10 +197,14 @@ export class Cipherly {
   /**
    * Encrypts data and returns a URL-safe Base64 string.
    * @param data - The data to encrypt.
+   * @param expirationOpts - Optional expiration settings for the token.
    * @returns A Promise that resolves to a URL-safe Base64-encoded string.
    */
-  async encryptUrlSafe<T>(data: T): Promise<string> {
-    const encrypted = await this.encrypt(data);
+  async encryptUrlSafe<T>(
+    data: T,
+    expirationOpts?: ExpirationOpts,
+  ): Promise<string> {
+    const encrypted = await this.encrypt(data, expirationOpts);
     return this.toBase64Url(encrypted);
   }
 

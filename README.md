@@ -15,6 +15,7 @@
 * 🧠 **String-Based API** — Encrypts and decrypts strings seamlessly (perfect for JSON, tokens, or secrets).
 * 🔁 **Automatic IV Generation** — Secure random IV created for every encryption operation.
 * 🪪 **Secure Key Derivation** — Derives 256-bit keys from passphrases using SHA-256.
+* ⏰ **Token Expiration** — Built-in support for time-based token expiration with TTL or absolute timestamps.
 * 🧩 **Fully Typed** — 100% TypeScript for better DX and autocompletion.
 * ⚡ **Zero Dependencies** — Built directly on the Web Crypto API.
 
@@ -94,7 +95,7 @@ import { Cipherly } from 'cipherly';
 
 const cipher = new Cipherly('secure-key');
 
-const data = { token: 'abc123', expires: Date.now() };
+const data = { token: 'abc123', userId: 42 };
 
 const encrypted = await cipher.encryptUrlSafe(data);
 console.log('URL-safe encrypted:', encrypted);
@@ -102,11 +103,48 @@ console.log('URL-safe encrypted:', encrypted);
 
 const decrypted = await cipher.decryptUrlSafe<typeof data>(encrypted);
 console.log('Decrypted:', decrypted);
+
+// URL-safe with built-in expiration
+const encryptedWithExpiry = await cipher.encryptUrlSafe(data, { ttl: 3600 });
+const decryptedWithExpiry = await cipher.decryptUrlSafe<typeof data>(encryptedWithExpiry);
 ```
 
 ---
 
-### 3. Handling Errors Gracefully
+### 3. Token Expiration
+
+```typescript
+import { Cipherly } from 'cipherly';
+
+const cipher = new Cipherly('secure-key');
+
+// Encrypt with 1 hour TTL
+const tokenData = { userId: 123, sessionId: 'abc-456' };
+const encrypted = await cipher.encrypt(tokenData, { ttl: 3600000 }); // 3600000 milliseconds = 1 hour
+
+// Decrypt valid token
+const decrypted = await cipher.decrypt<typeof tokenData>(encrypted);
+console.log(decrypted); // { userId: 123, sessionId: 'abc-456' }
+
+// Encrypt with absolute expiration timestamp
+const expiresAt = Date.now() + 24 * 60 * 60 * 1000; // 24 hours from now
+const encryptedWithExpiry = await cipher.encrypt(tokenData, { expiresAt });
+
+// URL-safe encryption with expiration
+const urlSafeEncrypted = await cipher.encryptUrlSafe(tokenData, { ttl: 3600000 });
+const urlSafeDecrypted = await cipher.decryptUrlSafe<typeof tokenData>(urlSafeEncrypted);
+```
+
+> 🔥 **Expiration behavior:**
+>
+> * Tokens automatically expire after the specified time
+> * Expired tokens throw an error: `"Token has expired"`
+> * Expiration is checked during decryption only
+> * `expiresAt` takes precedence over `ttl` when both are provided
+
+---
+
+### 4. Handling Errors Gracefully
 
 ```typescript
 import { Cipherly } from 'cipherly';
@@ -140,16 +178,19 @@ new Cipherly(secretKey: string, options?: { ivLength?: number})
 ```
 
 * `secretKey` — Your secret passphrase (used to derive AES-GCM key)
-* `options.iv` — Optional custom 12-byte IV
+* `options.ivLength` — Optional custom IV length (default: 12 bytes)
 
 #### **Methods**
 
-##### `encrypt(data: string): Promise<string>`
+##### `encrypt(data: string, expirationOpts?: ExpirationOpts): Promise<string>`
 
 Encrypts a string.
 
 ```typescript
 const encrypted = await cipher.encrypt('hello');
+
+// With expiration
+const encryptedWithExpiry = await cipher.encrypt('hello', { ttl: 3600000 });
 ```
 
 ##### `decrypt(encryptedData: string): Promise<string>`
@@ -160,12 +201,15 @@ Decrypts an encrypted string.
 const decrypted = await cipher.decrypt(encrypted);
 ```
 
-##### `encryptUrlSafe(data: any): Promise<string>`
+##### `encryptUrlSafe(data: any, expirationOpts?: ExpirationOpts): Promise<string>`
 
 Encrypts data and returns a URL-safe Base64 string.
 
 ```typescript
 const encrypted = await cipher.encryptUrlSafe('hello');
+
+// With expiration
+const encryptedWithExpiry = await cipher.encryptUrlSafe('hello', { ttl: 3600000 });
 ```
 
 ##### `decryptUrlSafe(encryptedData: string): Promise<any>`
@@ -175,6 +219,19 @@ Decrypts a URL-safe Base64 string.
 ```typescript
 const decrypted = await cipher.decryptUrlSafe(encrypted);
 ```
+
+#### Expiration Options
+
+```typescript
+type ExpirationOpts = {
+  ttl?: number;        // Time to live in milliseconds from now
+  expiresAt?: number;  // Absolute expiration timestamp (milliseconds since epoch)
+};
+```
+
+* `ttl` — Number of milliseconds until the token expires
+* `expiresAt` — Exact timestamp (milliseconds since Unix epoch) when the token expires
+* If both are provided, `expiresAt` takes precedence
 
 ---
 

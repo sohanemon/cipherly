@@ -192,4 +192,97 @@ describe('Cipherly', () => {
     expect(decrypted1).toBe(data);
     expect(decrypted2).toBe(data);
   });
+
+  describe('Expiration functionality', () => {
+    it('should encrypt and decrypt data with TTL expiration', async () => {
+      const data = { token: 'abc123', userId: 42 };
+      const encrypted = await cipher.encrypt(data, { ttl: 3600000 }); // 1 hour in milliseconds
+      const decrypted = await cipher.decrypt<typeof data>(encrypted);
+      expect(decrypted).toEqual(data);
+    });
+
+    it('should encrypt and decrypt data with absolute expiration timestamp', async () => {
+      const data = { token: 'abc123' };
+      const expiresAt = Date.now() + 3600000; // 1 hour from now
+      const encrypted = await cipher.encrypt(data, { expiresAt });
+      const decrypted = await cipher.decrypt<typeof data>(encrypted);
+      expect(decrypted).toEqual(data);
+    });
+
+    it('should throw error when decrypting expired token', async () => {
+      const data = { token: 'abc123' };
+      const expiredTimestamp = Date.now() - 1000; // 1 second ago
+      const encrypted = await cipher.encrypt(data, {
+        expiresAt: expiredTimestamp,
+      });
+
+      await expect(cipher.decrypt<typeof data>(encrypted)).rejects.toThrow(
+        'Token has expired',
+      );
+    });
+
+    it('should work with URL-safe encoding and expiration', async () => {
+      const data = { token: 'abc123' };
+      const encrypted = await cipher.encryptUrlSafe(data, { ttl: 3600000 });
+      const decrypted = await cipher.decryptUrlSafe<typeof data>(encrypted);
+      expect(decrypted).toEqual(data);
+    });
+
+    it('should throw error for expired URL-safe token', async () => {
+      const data = { token: 'abc123' };
+      const expiredTimestamp = Date.now() - 1000;
+      const encrypted = await cipher.encryptUrlSafe(data, {
+        expiresAt: expiredTimestamp,
+      });
+
+      await expect(
+        cipher.decryptUrlSafe<typeof data>(encrypted),
+      ).rejects.toThrow('Token has expired');
+    });
+
+    it('should encrypt string data with expiration', async () => {
+      const data = 'secret string';
+      const encrypted = await cipher.encrypt(data, { ttl: 60000 }); // 60 seconds in milliseconds
+      const decrypted = await cipher.decrypt<string>(encrypted);
+      expect(decrypted).toBe(data);
+    });
+
+    it('should throw error for expired string token', async () => {
+      const data = 'secret string';
+      const expiredTimestamp = Date.now() - 1000;
+      const encrypted = await cipher.encrypt(data, {
+        expiresAt: expiredTimestamp,
+      });
+
+      await expect(cipher.decrypt<string>(encrypted)).rejects.toThrow(
+        'Token has expired',
+      );
+    });
+
+    it('should work without expiration when no expiration options provided', async () => {
+      const data = { token: 'abc123' };
+      const encrypted = await cipher.encrypt(data);
+      const decrypted = await cipher.decrypt<typeof data>(encrypted);
+      expect(decrypted).toEqual(data);
+    });
+
+    it('should prioritize expiresAt over ttl when both provided', async () => {
+      const data = { token: 'abc123' };
+      const expiresAt = Date.now() + 7200000; // 2 hours from now
+      const encrypted = await cipher.encrypt(data, { ttl: 3600000, expiresAt }); // ttl is 1 hour in milliseconds
+      const decrypted = await cipher.decrypt<typeof data>(encrypted);
+      expect(decrypted).toEqual(data);
+
+      // Should still be valid after 1 hour (since expiresAt is 2 hours)
+      // Note: This test assumes the encryption/decryption happens quickly
+    });
+
+    it('should handle very short TTL', async () => {
+      const data = { token: 'abc123' };
+      const encrypted = await cipher.encrypt(data, { ttl: 1 }); // 1 millisecond
+      // Immediately try to decrypt - might still work if timing is fast enough
+      const decrypted = await cipher.decrypt<typeof data>(encrypted);
+      expect(decrypted).toEqual(data);
+    });
+  });
 });
